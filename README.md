@@ -65,7 +65,9 @@ proyecto ya está listo para el resto del proceso:
    ```
 4. Antes de compilar, cambia el `"package"` en `app.json`
    (`com.bizmint.app`) por un identificador único tuyo si ese ya está
-   tomado, y reemplaza los íconos en `assets/` con tu propio branding.
+   tomado. El branding (ícono, ícono adaptativo de Android, splash) ya está
+   generado a partir del logo de BizMint — ver la sección de branding más
+   abajo si quieres actualizarlo.
 5. Compila el App Bundle de producción:
    ```bash
    eas build --platform android --profile production
@@ -82,6 +84,28 @@ proyecto ya está listo para el resto del proceso:
    locales) y cuestionario de seguridad de datos.
 
 La guía oficial y siempre actualizada: https://docs.expo.dev/deploy/build-project/
+
+## Branding / logo
+
+`assets/` ya tiene el branding generado a partir del logo oficial de
+BizMint (el robot con la moneda):
+
+- `icon.png` — ícono principal (iOS y genérico), el mono sobre fondo navy.
+- `android-icon-foreground.png` / `android-icon-monochrome.png` — capas del
+  ícono adaptativo de Android (`backgroundColor` navy definido en `app.json`).
+- `splash-icon.png` — pantalla de carga.
+- `favicon.png` — ícono para la versión web.
+- `store/bizmint-logo-full.png` — el lockup completo (mono + texto "BizMint"
+  + tagline), útil para el gráfico de portada ("feature graphic" 1024×500)
+  y materiales de marketing en la ficha de Google Play.
+- `store/bizmint-mark-transparent.png` — solo el mono en 1024×1024
+  transparente, por si necesitas el ícono de 512×512 de la ficha de Play
+  Store aparte del `.aab` (Play lo regenera del ícono de la app, pero a
+  veces piden subirlo también en la ficha de la tienda).
+
+Si cambias el logo más adelante, todos estos archivos se regeneran con el
+mismo recorte/composición desde el PNG original del logo — pide que se
+vuelvan a generar y se actualiza todo junto.
 
 ## Monetización
 

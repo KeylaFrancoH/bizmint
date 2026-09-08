@@ -1,34 +1,49 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState, BudgetSettings } from "../types";
 
-const STORAGE_KEY = "bizmint:v1:state";
+const STORAGE_KEY = "bizmint:v2:state";
 
 export const DEFAULT_BUDGET: BudgetSettings = {
   monthlyIncome: 0,
   monthlyBudget: 0,
   savingsGoalPercent: 10,
-  categoryBudgets: {},
 };
 
-export const DEFAULT_STATE: AppState = {
-  expenses: [],
-  budget: DEFAULT_BUDGET,
-  isPremium: false,
-  onboardingComplete: false,
-};
+function uid(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function freshState(): AppState {
+  return {
+    accounts: [
+      { id: uid(), name: "Efectivo", startBalance: 0 },
+      { id: uid(), name: "Tarjeta", startBalance: 0 },
+    ],
+    categories: [],
+    movements: [],
+    reminders: [],
+    goals: [],
+    archive: [],
+    currency: "USD",
+    simItems: [],
+    simBase: null,
+    budget: DEFAULT_BUDGET,
+    isPremium: false,
+  };
+}
 
 export async function loadState(): Promise<AppState> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STATE;
+    if (!raw) return freshState();
     const parsed = JSON.parse(raw);
     return {
-      ...DEFAULT_STATE,
+      ...freshState(),
       ...parsed,
       budget: { ...DEFAULT_BUDGET, ...parsed.budget },
     };
   } catch {
-    return DEFAULT_STATE;
+    return freshState();
   }
 }
 

@@ -1,19 +1,16 @@
-import { AppState, Category, Expense, SpendAdvice } from "../types";
+import { AppState, Movement, SpendAdvice } from "../types";
+import { isSameMonth } from "../domain/finance";
 
 function daysInMonth(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
-function sameMonth(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+function monthExpenses(movements: Movement[], reference: Date): Movement[] {
+  return movements.filter((m) => m.kind === "gasto" && isSameMonth(m.date, reference));
 }
 
-function monthExpenses(expenses: Expense[], reference: Date): Expense[] {
-  return expenses.filter((e) => sameMonth(new Date(e.date), reference));
-}
-
-function sum(expenses: Expense[]): number {
-  return expenses.reduce((total, e) => total + e.amount, 0);
+function sum(movements: Movement[]): number {
+  return movements.reduce((total, m) => total + m.amount, 0);
 }
 
 export function effectiveMonthlyBudget(state: AppState): number {
@@ -35,25 +32,24 @@ const money = (n: number) => `$${n.toFixed(2)}`;
  */
 export function evaluateSpend(
   amount: number,
-  category: Category,
+  categoryId: string | null,
   state: AppState,
   now: Date = new Date()
 ): SpendAdvice {
   const budget = effectiveMonthlyBudget(state);
-  const thisMonth = monthExpenses(state.expenses, now);
+  const thisMonth = monthExpenses(state.movements, now);
   const spentSoFar = sum(thisMonth);
 
   if (budget <= 0) {
-    const remaining = -amount;
     return {
       canSpend: true,
       confidence: "baja",
       headline: "Puedes registrarlo, pero aún no tengo datos suficientes",
       reasons: [
         "No configuraste un presupuesto ni un ingreso mensual todavía.",
-        "Ve a Presupuesto para que la próxima respuesta sea confiable.",
+        "Ve a Ajustes para que la próxima respuesta sea confiable.",
       ],
-      remainingAfter: remaining,
+      remainingAfter: -amount,
       remainingBudgetNow: 0,
       suggestedMaxToday: 0,
     };
@@ -67,10 +63,12 @@ export function evaluateSpend(
   const suggestedMaxToday = Math.max(remainingBudgetNow / daysRemaining, 0);
   const remainingAfter = remainingBudgetNow - amount;
 
-  const categoryBudget = state.budget.categoryBudgets[category];
-  const categorySpent = sum(thisMonth.filter((e) => e.category === category));
-  const categoryRemaining =
-    categoryBudget !== undefined ? categoryBudget - categorySpent : undefined;
+  const category = categoryId ? state.categories.find((c) => c.id === categoryId) : undefined;
+  const categoryLimit = category?.limit ?? undefined;
+  const categorySpent = category
+    ? sum(thisMonth.filter((m) => m.categoryId === category.id))
+    : 0;
+  const categoryRemaining = categoryLimit !== undefined ? categoryLimit - categorySpent : undefined;
 
   const reasons: string[] = [
     `Este mes llevas gastado ${money(spentSoFar)} de ${money(budget)}.`,
@@ -104,18 +102,18 @@ export function evaluateSpend(
     };
   }
 
-  if (categoryRemaining !== undefined && amount > categoryRemaining) {
+  if (category && categoryRemaining !== undefined && amount > categoryRemaining) {
     const stillHealthy = remainingAfter > suggestedMaxToday * daysRemaining * 0.5;
     reasons.push(
       categoryRemaining > 0
-        ? `En "${category}" solo te quedaban ${money(categoryRemaining)} este mes.`
-        : `Ya agotaste tu presupuesto de "${category}" este mes.`
+        ? `En "${category.name}" solo te quedaban ${money(categoryRemaining)} este mes.`
+        : `Ya agotaste tu límite de "${category.name}" este mes.`
     );
     if (!stillHealthy) {
       return {
         canSpend: false,
         confidence: "media",
-        headline: `No te conviene, ya usaste tu presupuesto de ${category}`,
+        headline: `No te conviene, ya usaste tu límite de ${category.name}`,
         reasons,
         remainingAfter,
         remainingBudgetNow,
@@ -125,7 +123,7 @@ export function evaluateSpend(
     return {
       canSpend: true,
       confidence: "baja",
-      headline: `Sí, pero te pasas del límite que pusiste para ${category}`,
+      headline: `Sí, pero te pasas del límite que pusiste para ${category.name}`,
       reasons,
       remainingAfter,
       remainingBudgetNow,

@@ -2,22 +2,24 @@ import React from "react";
 import { NavigationContainer, DarkTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import DashboardScreen from "../screens/DashboardScreen";
-import AddExpenseScreen from "../screens/AddExpenseScreen";
-import ExpensesScreen from "../screens/ExpensesScreen";
-import BudgetScreen from "../screens/BudgetScreen";
-import AdvisorScreen from "../screens/AdvisorScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+import ResumenScreen from "../screens/ResumenScreen";
+import MovimientosScreen from "../screens/MovimientosScreen";
+import AgregarScreen from "../screens/AgregarScreen";
+import AsesorScreen from "../screens/AsesorScreen";
+import MetasScreen from "../screens/MetasScreen";
+import GraficosScreen from "../screens/GraficosScreen";
+import AjustesScreen from "../screens/AjustesScreen";
 import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
 
 const iconByRoute: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Inicio: "home",
+  Resumen: "home",
+  Movimientos: "list",
   Agregar: "add-circle",
-  Historial: "list",
   Asesor: "sparkles",
-  Presupuesto: "wallet",
+  Metas: "flag",
+  Gráficos: "bar-chart",
   Ajustes: "settings",
 };
 
@@ -42,17 +44,31 @@ export default function RootNavigator() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: { backgroundColor: colors.bgAlt, borderTopColor: colors.border },
+          tabBarLabelStyle: { fontSize: 10 },
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name={iconByRoute[route.name] ?? "ellipse"} size={size} color={color} />
+            <Ionicons name={iconByRoute[route.name] ?? "ellipse"} size={size - 4} color={color} />
           ),
         })}
       >
-        <Tab.Screen name="Inicio" component={DashboardScreen} />
-        <Tab.Screen name="Agregar" component={AddExpenseScreen} />
-        <Tab.Screen name="Asesor" component={AdvisorScreen} />
-        <Tab.Screen name="Historial" component={ExpensesScreen} />
-        <Tab.Screen name="Presupuesto" component={BudgetScreen} />
-        <Tab.Screen name="Ajustes" component={SettingsScreen} />
+        <Tab.Screen name="Resumen" component={ResumenScreen} />
+        <Tab.Screen name="Movimientos" component={MovimientosScreen} />
+        <Tab.Screen
+          name="Agregar"
+          component={AgregarScreen}
+          listeners={({ navigation, route }) => ({
+            tabPress: () => {
+              // Tapping the tab icon directly (not navigating here to edit a
+              // specific movement) should always open a blank form.
+              if ((route.params as { editId?: string } | undefined)?.editId) {
+                navigation.setParams({ editId: undefined });
+              }
+            },
+          })}
+        />
+        <Tab.Screen name="Asesor" component={AsesorScreen} />
+        <Tab.Screen name="Metas" component={MetasScreen} />
+        <Tab.Screen name="Gráficos" component={GraficosScreen} />
+        <Tab.Screen name="Ajustes" component={AjustesScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
